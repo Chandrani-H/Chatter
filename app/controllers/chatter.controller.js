@@ -38,6 +38,14 @@ exports.createUser = (req, res) => {
 };
 
 
+//Connect a User
+exports.connectUser = (req, res) => {
+    console.log('%O', req);
+
+    res.send(data);
+};
+
+
 //Create a new ChatRoom (post)
 exports.createChatRoom = (req, res) => {
     // Validate request

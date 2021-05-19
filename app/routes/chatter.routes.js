@@ -4,6 +4,9 @@ module.exports = (app) => {
     // Create a new User
     app.post('/user', chatter.createUser);
 
+    //Connect User
+    app.post('/connectUser', chatter.connectUser);
+
     //Create a new ChatRoom (post)
     app.post('/chatroom', chatter.createChatRoom);
 
