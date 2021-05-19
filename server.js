@@ -36,7 +36,7 @@ app.get('/', (req, res) => {
 // Require routes
 require('./app/routes/chatter.routes.js')(app);
 
+const PORT = process.env.PORT || 8080;
+
 // listen for requests
-app.listen(3000, () => {
-    console.log("Server is listening on port 3000");
-});
+app.listen(PORT, console.log(`Server started on port ${PORT}`));
