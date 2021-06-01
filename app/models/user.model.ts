@@ -1,17 +1,17 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
-const userTimeStamp = {
-    createdAt: "joinedAt",
-    updatedAt: "profileUpdatedAt",
-  };
+// const userTimeStamp = {
+//     createdAt: "joinedAt",
+//     updatedAt: "profileUpdatedAt",
+//   };
 
-const UserSchema = mongoose.Schema({
+const UserSchema = new mongoose.Schema({
     username: { type: String, lowercase: true, unique: true, required: true },
-    email: { type: String, lowercase: true, unique: true, required: true },
+    email: { type: String, lowercase: true, unique: true, required: false },
     password: {type: String, required: true },
     is_active: { type: Boolean, default: false },
     chatrooms: [{name: String}]
-    }, userTimeStamp
+    }
 );
 
 module.exports = mongoose.model('User', UserSchema);
