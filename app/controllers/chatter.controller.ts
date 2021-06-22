@@ -1,19 +1,22 @@
 const User = require('../models/user.model.ts');
 const Message = require('../models/message.model.ts');
 const ChatRoom = require('../models/chatroom.model.ts');
-const chatterRoutes = require('../routes/chatter.routes.ts');
-import { Request, Response } from "express";
+import * as chatterRoutes from "../routes/chatter.routes";
+import * as Utils from "../utils/util";
+import e, { Request, Response } from "express";
+import { forEachChild } from "typescript";
 
 // Register a new User (post)
 exports.createUser = (req: Request, res: Response) => {
     // Validate request
     if(!req.body.username || !req.body.email || !req.body.password) {
+        console.log(req.body.username);
         return res.status(400).send({
             message: "User data cannot be empty"+req.body
         });
     }
     
-    console.log('%O', req.body);
+    
 
     // Create a new User
     const user = new User({
@@ -28,14 +31,13 @@ exports.createUser = (req: Request, res: Response) => {
     // does it get auto-set is_active: YES
 
     // Save User in the database
-    try {
-        const data: String = user.save();
+    const data: String = user.save().then(() =>{
         if(data) {
             res.status(200).send(data);
         }
-      } catch (e) {
+    }).catch(e => {
         res.status(500).send(e.message || "Some error occurred while registering the User.");
-      }
+    });
       
     // user.save()
     // .then(data => {
@@ -59,42 +61,38 @@ exports.connectUser = (req: Request, res: Response) => {
     }
 
     // Find the user & update as active
-    try {
-        const data: string = User.findOneAndUpdate(
-        {username: req.body.username},
-        {is_active: true}, {new:true},
-        function(err: Error, docs: Object) {
-            if(err) {
-                res.status(404).send({
-                    message: "User not found or could not be updated" + req.body.username
-                });
-            } else {
-                console.log("Document:", docs);
-            }
-        });
-
+    const data: string = User.findOneAndUpdate(
+    {username: req.body.username},
+    {is_active: true}, {new:true},
+    function(err: Error, docs: Object) {
+        if(err) {
+            res.status(404).send({
+                message: "User not found or could not be updated" + req.body.username
+            });
+        } else {
+            console.log("Document:", docs);
+        }
+    }).then(() => {
         if(!data) {
             res.status(404).send({
                 message: "ChatRoom not found " + req.params.chatroom
             });
         }
 
-        let current = new Date();
-        const token = btoa(req.body.username + current.toLocaleString());
+        //get token
+        let token = Utils.getTokenForUser(req.body.username);
         res.status(200).send({"token": token});
+            
+    }).catch(e => {
+        return res.status(404).send({
+            message: "ChatRoom not found " + req.params.chatroom
+        });                
+        // return res.status(500).send({
+        //     message: "Error updating chatroom " + req.params.chatroom
+        // });
+    });
 
-        } catch (e) {
-            if(e.kind === 'ObjectId') {
-                return res.status(404).send({
-                    message: "ChatRoom not found " + req.params.chatroom
-                });                
-            }
-            return res.status(500).send({
-                message: "Error updating chatroom " + req.params.chatroom
-            });
-        }
-
-    res.status(200).send("");
+    res.status(200).send("?");
 };
 
 
@@ -165,7 +163,7 @@ exports.addMessage = (req: Request, res: Response) => {
     console.log('%O', req.body);
     console.log('%O', req.params);
 
-    const message = new Message({
+    let message = new Message({
         from: req.body.currentUser,
         body: req.body.message
         //can enable attachment later
@@ -212,14 +210,28 @@ exports.getMessages = (req: Request, res: Response) => {
     console.log('%O', req.body);
     console.log('%O', req.params);
 
-    try {
-        const data: String = ChatRoom.findOne({name: req.params.chatroom})
-        res.send(data);
-    } catch(e) {
-        res.status(500).send({
-            message: e.message || "Some error occurred while retrieving chatroom data."
+    const data: String = ChatRoom.findOne({name: req.params.chatroom}).populate("messages").then((chatroom : typeof ChatRoom) => {
+        if(!chatroom) {
+            res.status(404).send({
+                message: "ChatRoom not found " + req.params.chatroom
+            });
+        }
+        
+        chatroom.message.forEach(function (message: typeof Message) {
+            if(message instanceof Message) {
+                console.log(message.body); //test
+            } else {
+                console.log("oops something went wrong");
+            }
         });
-    }
+        
+        //read messages from chatroom
+
+        res.status(200).send("");
+            
+    }).catch(e => {
+        res.status(500).send({ message: e.message || "Some error occurred while retrieving chatroom data."});
+    });
 };
 
 
